@@ -6,27 +6,44 @@ from django.template.loaders import filesystem, app_directories
 from hamlpy import hamlpy
 from hamlpy.template.utils import get_django_template_loaders
 
+from .. import constants
+
 
 def get_haml_loader(loader):
+
     if hasattr(loader, 'Loader'):
+
         baseclass = loader.Loader
+
     else:
+
         class baseclass(object):
+
             def load_template_source(self, *args, **kwargs):
+
                 return loader.load_template_source(*args, **kwargs)
 
     class Loader(baseclass):
+
         def load_template_source(self, template_name, *args, **kwargs):
             _name, _extension = os.path.splitext(template_name)
 
-            for extension in hamlpy.VALID_EXTENSIONS:
+            for extension in constants.HAMLPY_VALID_EXTENSIONS:
+
                 try:
-                    haml_source, template_path = super(Loader, self).load_template_source(
-                        self._generate_template_name(_name, extension), *args, **kwargs
+
+                    haml_source, template_path = super(
+                        Loader, self).load_template_source(
+                            self._generate_template_name(_name, extension),
+                            *args, **kwargs
                     )
+
                 except TemplateDoesNotExist:
+
                     pass
+
                 else:
+
                     hamlParser = hamlpy.Compiler()
                     html = hamlParser.process(haml_source)
 
@@ -43,7 +60,7 @@ def get_haml_loader(loader):
 
 
 haml_loaders = dict((name, get_haml_loader(loader))
-        for (name, loader) in get_django_template_loaders())
+                    for (name, loader) in get_django_template_loaders())
 
 
 HamlPyFilesystemLoader = get_haml_loader(filesystem)

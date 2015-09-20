@@ -1,13 +1,16 @@
+# XXX: Add pygments requirements
 import re
 import sys
+
+from . import constants
 
 
 class Element(object):
 
-    """contains the pieces of an element and can populate itself from haml element text"""
-
-    self_closing_tags = (
-        'meta', 'img', 'link', 'br', 'hr', 'input', 'source', 'track')
+    """
+    contains the pieces of an element and can populate itself from
+    haml element text
+    """
 
     ELEMENT = '%'
     ID = '#'
@@ -35,7 +38,8 @@ class Element(object):
 
     RUBY_HAML_REGEX = re.compile(r'(:|\")%s(\"|) =>' % (_ATTRIBUTE_KEY_REGEX))
     ATTRIBUTE_REGEX = re.compile(
-        r'(?P<pre>\{\s*|,\s*)%s:\s*%s' % (_ATTRIBUTE_KEY_REGEX, _ATTRIBUTE_VALUE_REGEX))
+        r'(?P<pre>\{\s*|,\s*)%s:\s*%s' %
+        (_ATTRIBUTE_KEY_REGEX, _ATTRIBUTE_VALUE_REGEX))
     DJANGO_VARIABLE_REGEX = re.compile(
         r'^\s*=\s(?P<variable>[a-zA-Z_][a-zA-Z0-9._-]*)\s*$')
 
@@ -59,10 +63,11 @@ class Element(object):
             split_tags.get('attributes'))
         self.tag = split_tags.get('tag').strip(self.ELEMENT) or 'div'
         self.id = self._parse_id(split_tags.get('id'))
-        self.classes = ('%s %s' % (split_tags.get('class').lstrip(self.CLASS)
-                        .replace('.', ' '), self._parse_class_from_attributes_dict())).strip()
+        self.classes = (
+            '%s %s' % (split_tags.get('class').lstrip(self.CLASS).replace(
+                '.', ' '), self._parse_class_from_attributes_dict())).strip()
         self.self_close = split_tags.get(
-            'selfclose') or self.tag in self.self_closing_tags
+            'selfclose') or self.tag in constants.ELEMENTS_SELF_CLOSING_TAGS
         self.nuke_inner_whitespace = split_tags.get(
             'nuke_inner_whitespace') != ''
         self.nuke_outer_whitespace = split_tags.get(
@@ -88,12 +93,18 @@ class Element(object):
     def _parse_id_dict(self, id_dict):
         text = ''
         id_dict = self.attributes_dict.get('id')
+
         if isinstance(id_dict, str):
+
             text = '_' + id_dict
+
         else:
+
             text = ''
+
             for one_id in id_dict:
                 text += '_' + one_id
+
         return text
 
     def _escape_attribute_quotes(self, v):
@@ -102,9 +113,12 @@ class Element(object):
         '''
         escaped = []
         inside_tag = False
+
         for i, _ in enumerate(v):
+
             if v[i:i + 2] == '{%':
                 inside_tag = True
+
             elif v[i:i + 2] == '%}':
                 inside_tag = False
 
@@ -117,8 +131,10 @@ class Element(object):
 
     def _parse_attribute_dictionary(self, attribute_dict_string):
         attributes_dict = {}
+
         if (attribute_dict_string):
             attribute_dict_string = attribute_dict_string.replace('\n', ' ')
+
             try:
                 # converting all allowed attributes to python dictionary style
 
@@ -127,7 +143,8 @@ class Element(object):
                     self.RUBY_HAML_REGEX, '"\g<key>":', attribute_dict_string)
                 # Put double quotes around key
                 attribute_dict_string = re.sub(
-                    self.ATTRIBUTE_REGEX, '\g<pre>"\g<key>":\g<val>', attribute_dict_string)
+                    self.ATTRIBUTE_REGEX, '\g<pre>"\g<key>":\g<val>',
+                    attribute_dict_string)
                 # Parse string as dictionary
                 attributes_dict = eval(attribute_dict_string)
                 for k, v in list(attributes_dict.items()):
@@ -140,11 +157,13 @@ class Element(object):
                             # DEPRECATED: Replace variable in attributes (e.g.
                             # "= somevar") with Django version ("{{somevar}}")
                             v = re.sub(
-                                self.DJANGO_VARIABLE_REGEX, '{{\g<variable>}}', attributes_dict[k])
+                                self.DJANGO_VARIABLE_REGEX,
+                                '{{\g<variable>}}',
+                                attributes_dict[k])
                             if v != attributes_dict[k]:
-                                sys.stderr.write("\n---------------------\nDEPRECATION WARNING: %s" % self.haml.lstrip() +
-                                                 "\nThe Django attribute variable feature is deprecated and may be removed in future versions." +
-                                                 "\nPlease use inline variables ={...} instead.\n-------------------\n")
+                                sys.stderr.write(
+                                    (constants.ELEMENTS_DEPRECATION_WARNING).format(
+                                        tag=self.haml.lstrip()))
 
                             attributes_dict[k] = v
                             # v = v.decode('utf-8')

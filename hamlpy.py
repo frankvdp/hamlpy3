@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-from .nodes import RootNode, FilterNode, HamlNode, create_node
+from .nodes import RootNode, HamlNode, create_node
 from optparse import OptionParser
-import sys
-
-VALID_EXTENSIONS = ['haml', 'hamlpy']
 
 
 class Compiler:
@@ -20,7 +16,8 @@ class Compiler:
         for line_number, line in enumerate(line_iter):
             node_lines = line
 
-            if root.parent_of(HamlNode(line)).should_treat_children_as_multiline():
+            if root.parent_of(
+                    HamlNode(line)).should_treat_children_as_multiline():
                 if line.count('{') - line.count('}') == 1:
                     start_multiline = line_number  # For exception handling
 
@@ -28,8 +25,10 @@ class Compiler:
                         try:
                             line = next(line_iter)
                         except StopIteration:
+
                             raise Exception(
-                                'No closing brace found for multi-line HAML beginning at line %s' % (start_multiline + 1))
+                                'No closing brace found for multi-line HAML '
+                                'beginning at line %s' % (start_multiline + 1))
                         node_lines += line
 
             # Blank lines
@@ -47,17 +46,21 @@ class Compiler:
 
 
 def convert_files():
-    import sys
     import codecs
 
     parser = OptionParser()
-    parser.add_option("-d", "--debug-tree", dest="debug_tree",
-                      action="store_true", help="Print the generated tree instead of the HTML")
+    parser.add_option(
+        "-d", "--debug-tree", dest="debug_tree",
+        action="store_true",
+        help="Print the generated tree instead of the HTML")
     (options, args) = parser.parse_args()
 
-    if len(args) < 1:
+    if args:
+
         print("Specify the input file as the first argument.")
+
     else:
+
         infile = args[0]
         haml_lines = codecs.open(
             infile, 'r', encoding='utf-8').read().splitlines()
@@ -66,9 +69,12 @@ def convert_files():
         output = compiler.process_lines(haml_lines, options=options)
 
         if len(args) == 2:
+
             outfile = codecs.open(args[1], 'w', encoding='utf-8')
             outfile.write(output)
+
         else:
+
             print(output)
 
 if __name__ == '__main__':
